@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدخال 200+ مؤشر أداء</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Cairo', sans-serif;
+        }
+
+        body {
+            background: #f8fafc;
+            min-height: 100vh;
+            direction: rtl;
+            padding: 10px;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .facility-info {
+            background: #f0f9ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-right: 3px solid #0ea5e9;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            padding: 15px 20px;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            background: white;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .tab-btn.active {
+            background: #0ea5e9;
+            color: white;
+            border-color: #0ea5e9;
+        }
+
+        /* Indicators Container */
+        .indicators-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Indicator Card */
+        .indicator-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        .indicator-card.entered {
+            border-right: 3px solid #22c55e;
+            background: #f0fdf4;
+        }
+
+        .indicator-card.partial {
+            border-right: 3px solid #f59e0b;
+            background: #fefce8;
+        }
+
+        .indicator-card.empty {
+            border-right: 3px solid #94a3b8;
+        }
+
+        .indicator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .indicator-code {
+            font-family: monospace;
+            font-weight: 700;
+            color: #1e40af;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .indicator-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .indicator-formula {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+            font-family: monospace;
+            background: #f8fafc;
+            padding: 5px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .indicator-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .status-entered {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-partial {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-empty {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* Input Row */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .input-label i {
+            margin-left: 3px;
+        }
+
+        .num-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .input-help {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: #64748b;
+            flex: 1;
+        }
+
+        .help-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Result Box */
+        .result-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 12px 15px;
+            border-radius: 6px;
+            border-right: 3px solid #0ea5e9;
+            margin-top: 10px;
+        }
+
+        .result-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .result-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* Actions Bar */
+        .actions-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .stats strong {
+            color: #1e40af;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0284c7;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Progress */
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #22c55e;
+            transition: width 0.3s;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            border-right: 4px solid #22c55e;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-top">
+            <h1 style="font-size: 18px; color: #1e293b;">
+                <i class="fas fa-chart-line"></i> نظام إدخال بيانات المؤشرات (200+ مؤشر)
+            </h1>
+            <div style="font-size: 14px; color: #475569;">
+                <i class="fas fa-user-md"></i> د. سارة خالد
+            </div>
+        </div>
+        <div class="facility-info">
+            <div style="font-weight: 600; color: #1e40af;">
+                <i class="fas fa-hospital"></i> مستشفى القاهرة المركزي
+            </div>
+            <div style="font-size: 13px; color: #64748b; margin-top: 3px;">
+                نوع المنشأة: مستشفى | المؤشرات المتاحة: 97 مؤشر
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label class="filter-label">الشهر</label>
+            <select class="filter-select" id="monthSelect">
+                <option value="2024-03">مارس 2024</option>
+                <option value="2024-02">فبراير 2024</option>
+                <option value="2024-01">يناير 2024</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">حالة الإدخال</label>
+            <select class="filter-select" id="statusFilter">
+                <option value="all">جميع المؤشرات</option>
+                <option value="entered">تم الإدخال كاملاً</option>
+                <option value="partial">جزئي</option>
+                <option value="empty">لم يتم الإدخال</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">بحث في المؤشرات</label>
+            <input type="text" class="filter-select" id="searchInput" placeholder="ابحث باسم المؤشر أو الكود...">
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <div style="font-weight: 600; color: #1e293b;">فئات المؤشرات</div>
+            <div style="font-size: 13px; color: #64748b; margin-top: 5px;">اختر فئة لعرض مؤشراتها</div>
+        </div>
+        <div class="tabs" id="kpiTabs">
+            <!-- سيتم ملؤها بالجافاسكريبت -->
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 14px; font-weight: 600; color: #475569;">تقدم الإدخال</div>
+            <div style="font-size: 14px; font-weight: 700; color: #0ea5e9;" id="progressText">0/97 (0%)</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Indicators Container -->
+    <div class="indicators-container" id="indicatorsContainer">
+        <!-- سيتم ملؤها بالجافاسكريبت -->
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="actions-bar">
+        <div class="stats">
+            تم إدخال <strong id="enteredCount">0</strong> من أصل <strong id="totalCount">97</strong> مؤشر
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="saveDraft()">
+                <i class="fas fa-save"></i> حفظ مسودة
+            </button>
+            <button class="btn btn-primary" onclick="submitAll()">
+                <i class="fas fa-paper-plane"></i> إرسال الكل للمراجعة
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification" style="display: none;">
+        <i class="fas fa-check-circle" style="color: #22c55e;"></i>
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        // ==================== البيانات الحقيقية ====================
+        
+        // فئات المؤشرات الحقيقية (15 فئة)
+        const kpiCategories = {
+            WFM: { name: "القوى البشرية", count: 22, color: "#0ea5e9", icon: "fas fa-users" },
+            UTZ: { name: "استخدام الطاقة", count: 15, color: "#3b82f6", icon: "fas fa-bed" },
+            MP: { name: "جودة الخدمة", count: 19, color: "#ef4444", icon: "fas fa-stethoscope" },
+            ST: { name: "البنية التحتية", count: 4, color: "#f59e0b", icon: "fas fa-building" },
+            FM: { name: "الإدارة المالية", count: 2, color: "#8b5cf6", icon: "fas fa-money-bill-wave" },
+            IMT: { name: "المعلومات الطبية", count: 6, color: "#06b6d4", icon: "fas fa-file-medical" },
+            MM: { name: "إدارة الدواء", count: 3, color: "#ec4899", icon: "fas fa-pills" },
+            LAB: { name: "المعمل", count: 2, color: "#84cc16", icon: "fas fa-flask" },
+            DF: { name: "إدارة الأدوية", count: 6, color: "#f97316", icon: "fas fa-prescription-bottle" },
+            PCC: { name: "رعاية المرضى", count: 7, color: "#6366f1", icon: "fas fa-hand-holding-heart" },
+            INT: { name: "المبادرات", count: 7, color: "#14b8a6", icon: "fas fa-bullhorn" },
+            PS: { name: "سلامة المرضى", count: 12, color: "#eab308", icon: "fas fa-shield-alt" },
+            IPC: { name: "مكافحة العدوى", count: 8, color: "#a855f7", icon: "fas fa-virus-slash" },
+            OHS: { name: "الصحة المهنية", count: 8, color: "#06b6d4", icon: "fas fa-hard-hat" },
+            PHC: { name: "الرعاية الأولية", count: 41, color: "#22c55e", icon: "fas fa-clinic-medical" }
+        };
+
+        // مؤشرات حقيقية (نموذج من الـ 200+)
+        const allKPIs = [
+            // WFM - القوى البشرية (22 مؤشر)
+            {
+                code: "WFM-01",
+                name: "نسبة تنفيذ الدورات التدريبية المدرجة بالخطة",
+                category: "WFM",
+                formula: "(إجمالي عدد الدورات المنفذة فعلياً × 100) ÷ إجمالي عدد الدورات المدرجة بالخطة",
+                numerator: "إجمالي عدد الدورات التدريبية المنفذة فعلياً",
+                numeratorHelp: "المستبعد: الدورات الغير مدرجة بالخطة - الدورات غير المكتملة",
+                denominator: "إجمالي عدد الدورات التدريبية المدرجة بالخطة",
+                denominatorHelp: "لا يوجد",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 90,
+                facilityType: ["hospital", "healthCenter"]
+            },
+            {
+                code: "WFM-02",
+                name: "نسبة الالتزام بالحضور للدورات التدريبية",
+                category: "WFM",
+                formula: "(عدد المتدربين الذين التزموا بالحضور × 100) ÷ إجمالي عدد المتدربين المستهدفين",
+                numerator: "عدد المتدربين الذين التزموا بالحضور",
+                numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
+                denominator: "إجمالي عدد المتدربين المستهدفين",
+                denominatorHelp: "لا يوجد",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 85,
+                facilityType: ["hospital", "healthCenter"]
+            },
+            {
+                code: "WFM-03",
+                name: "نسبة اجتياز المتدربين للدورات التدريبية",
+                category: "WFM",
+                formula: "(إجمالي عدد المتدربين الذين اجتازوا التقييم النهائي × 100) ÷ إجمالي عدد المتدربين الذين حضروا",
+                numerator: "إجمالي عدد المتدربين الذين اجتازوا التقييم النهائي",
+                numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
+                denominator: "إجمالي عدد المتدربين الذين حضروا",
+                denominatorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 90,
+                facilityType: ["hospital", "healthCenter"]
+            },
+            {
+                code: "WFM-04",
+                name: "متوسط الدورات التدريبية التي حصل عليها كل موظف سنوياً",
+                category: "WFM",
+                formula: "إجمالي عدد المتدربين في جميع الدورات المنفذة ÷ إجمالي عدد العاملين",
+                numerator: "إجمالي عدد المتدربين في جميع الدورات المنفذة",
+                numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
+                denominator: "إجمالي عدد العاملين",
+                denominatorHelp: "المستبعد: العاملين الجدد (3 شهور)",
+                calculation: "البسط / المقام",
+                unit: "دورة/موظف",
+                target: 2,
+                facilityType: ["hospital", "healthCenter"]
+            },
+            {
+                code: "WFM-05",
+                name: "نسبة العاملين الصحيين المدربين على الإنعاش القلبي الرئوي (BLS)",
+                category: "WFM",
+                formula: "(عدد العاملين الصحيين المدربين على BLS × 100) ÷ إجمالي عدد العاملين الصحيين بالمنشأة",
+                numerator: "عدد العاملين الصحيين المدربين على BLS",
+                numeratorHelp: "المستبعد: المشاركون الذين لم يجتازوا التدريب بنجاح - المتدربين بجهات غير معتمدة - المتدربين الذين مضى على تدريبهم أكثر من سنتين",
+                denominator: "إجمالي عدد العاملين الصحيين بالمنشأة",
+                denominatorHelp: "المستبعد: العاملين الجدد (3 شهور)",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 80,
+                facilityType: ["hospital"]
+            },
+
+            // UTZ - استخدام الطاقة (15 مؤشر)
+            {
+                code: "UTZ-01",
+                name: "نسبة الاشغال للأقسام الداخلية",
+                category: "UTZ",
+                formula: "عدد أيام إشغال الأسرة بالأقسام الداخلية ÷ (عدد الأسرة الداخلية × عدد أيام الفترة)",
+                numerator: "عدد أيام إشغال الأسرة بالأقسام الداخلية خلال الفترة",
+                numeratorHelp: "اجمالي أيام الاشغال = مجموع عدد الايام العلاجية للمرضى = مجموع التعداد اليومي للمرضى | المستبعد: الاقامة أقل من 24 ساعة",
+                denominator: "(عدد الأسرة الداخلية × عدد أيام الفترة)",
+                denominatorHelp: "اجمالي عدد ايام الشهر حسب الشهر (28 -30-31)",
+                calculation: "(البسط / المقام) × 100",
+                unit: "%",
+                target: 85,
+                facilityType: ["hospital"]
+            },
+            {
+                code: "UTZ-02",
+                name: "نسبة اشغال الرعايات المركزة",
+                category: "UTZ",
+                formula: "عدد أيام إشغال الأسرة بالرعايات المركزة ÷ (عدد أسرة الرعاية المركزة × عدد أيام الفترة)",
+                numerator: "عدد أيام إشغال الأسرة بالرعايات المركزة خلال الفترة",
+                numeratorHelp: "اجمالي أيام الاشغال = مجموع عدد الايام العلاجية للمرضى = مجموع التعداد اليومي للمرضى | المستبعد: الاقامة أقل من 24 ساعة",
+                denominator: "(عدد أسرة الرعاية المركزة × عدد أيام الفترة)",
+                denominatorHelp: "اجمالي عدد ايام الشهر حسب الشهر (28 -30-31)",
+                calculation: "(البسط / المقام) × 100",
+                unit: "%",
+                target: 80,
+                facilityType: ["hospital"]
+            },
+            {
+                code: "UTZ-03",
+                name: "نسبة اشغال رعايات حديثي الولادة",
+                category: "UTZ",
+                formula: "عدد أيام إشغال الأسرة برعاية حديثي الولادة ÷ (عدد أسرة رعاية حديثي الولادة × عدد أيام الفترة)",
+                numerator: "عدد أيام إشغال الأسرة برعاية حديثي الولادة خلال الفترة",
+                numeratorHelp: "اجمالي أيام الاشغال = مجموع عدد الايام العلاجية للمرضى = مجموع التعداد اليومي للمرضى | المستبعد: الاقامة أقل من 24 ساعة",
+                denominator: "(عدد أسرة رعاية حديثي الولادة × عدد أيام الفترة)",
+                denominatorHelp: "اجمالي عدد ايام الشهر حسب الشهر (28 -30-31)",
+                calculation: "(البسط / المقام) × 100",
+                unit: "%",
+                target: 75,
+                facilityType: ["hospital"]
+            },
+
+            // MP - جودة الخدمة (19 مؤشر)
+            {
+                code: "MP-01",
+                name: "نسبة وفيات الأقسام الداخلية",
+                category: "MP",
+                formula: "(عدد حالات الوفاة بالأقسام الداخلية × 100) ÷ إجمالي عدد حالات الخروج (أحياء + وفيات) من الأقسام الداخلية",
+                numerator: "عدد حالات الوفاة بالأقسام الداخلية",
+                numeratorHelp: "يشمل المرضى المحولين لقسم الرعاية وتوفوا خلال 48 ساعة من النقل | المستبعد: الاقامة أقل من 24 ساعة",
+                denominator: "إجمالي عدد حالات الخروج (أحياء + وفيات) من الأقسام الداخلية",
+                denominatorHelp: "عدد مرضى الخروج شاملا الوفيات",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 3,
+                facilityType: ["hospital"]
+            },
+            {
+                code: "MP-02",
+                name: "نسبة الوفيات لكل قسم",
+                category: "MP",
+                formula: "عدد حالات الوفاة في كل قسم ÷ إجمالي عدد حالات الخروج (أحياء + وفيات) من نفس القسم",
+                numerator: "عدد حالات الوفاة في كل قسم",
+                numeratorHelp: "يشمل المرضى المحولين لقسم الرعاية وتوفوا خلال 48 ساعة من النقل | المستبعد: الاقامة أقل من 24 ساعة",
+                denominator: "إجمالي عدد حالات الخروج (أحياء + وفيات) من نفس القسم",
+                denominatorHelp: "عدد مرضى الخروج شاملا الوفيات",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 2,
+                facilityType: ["hospital", "directorate"]
+            },
+
+            // PHC - الرعاية الأولية (41 مؤشر) - مثال
+            {
+                code: "PHC-01",
+                name: "تناسب عدد أطباء الأسرة : عدد الأسر/الأفراد",
+                category: "PHC",
+                formula: "إجمالي عدد أطباء الأسرة ÷ إجمالي عدد الأفراد أو الأسر المسجلين",
+                numerator: "إجمالي عدد أطباء الأسرة",
+                numeratorHelp: "المستبعد: الاخصائيين في تخصصات أخرى",
+                denominator: "إجمالي عدد الأفراد أو الأسر المسجلين",
+                denominatorHelp: "لا يوجد",
+                calculation: "البسط / المقام",
+                unit: "طبيب/فرد",
+                target: 0.002,
+                facilityType: ["healthCenter"]
+            },
+            {
+                code: "PHC-02",
+                name: "نسبة اكتمال التوثيق في سجلات ونماذج العيادات",
+                category: "PHC",
+                formula: "(عدد الدرجات التي حصلت عليها المنشأة × 100) ÷ إجمالي عدد الدرجات",
+                numerator: "عدد الدرجات التي حصلت عليها المنشأة",
+                numeratorHelp: "طبقا لقائمة مراجعة الملفات",
+                denominator: "إجمالي عدد الدرجات",
+                denominatorHelp: "لا يوجد",
+                calculation: "(البسط × 100) / المقام",
+                unit: "%",
+                target: 95,
+                facilityType: ["healthCenter"]
+            }
+        ];
+
+        // ==================== المتغيرات العامة ====================
+        let currentFacility = {
+            id: 1,
+            name: "مستشفى القاهرة المركزي",
+            type: "hospital" // hospital, healthCenter, directorate
+        };
+
+        let enteredData = {};
+        let currentCategory = "WFM";
+
+        // ==================== تهيئة النظام ====================
+        function init() {
+            loadTabs();
+            loadIndicators();
+            loadFromStorage();
+            updateProgress();
+        }
+
+        // تحميل التبويبات
+        function loadTabs() {
+            const tabsContainer = document.getElementById('kpiTabs');
+            tabsContainer.innerHTML = '';
+            
+            Object.keys(kpiCategories).forEach(categoryId => {
+                const category = kpiCategories[categoryId];
+                
+                // حساب عدد المؤشرات المتاحة لهذه المنشأة
+                const availableKPIs = allKPIs.filter(kpi => 
+                    kpi.category === categoryId && 
+                    kpi.facilityType.includes(currentFacility.type)
+                ).length;
+                
+                if (availableKPIs === 0) return; // لا تعرض تبويب بدون مؤشرات
+                
+                const tab = document.createElement('button');
+                tab.className = `tab-btn ${categoryId === currentCategory ? 'active' : ''}`;
+                tab.dataset.category = categoryId;
+                tab.innerHTML = `
+                    <i class="${category.icon}"></i>
+                    ${category.name}
+                    <span style="background: ${category.color}22; color: ${category.color}; padding: 1px 6px; border-radius: 10px; font-size: 11px;">
+                        ${availableKPIs}
+                    </span>
+                `;
+                
+                tab.addEventListener('click', () => {
+                    currentCategory = categoryId;
+                    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    loadIndicators();
+                });
+                
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        // تحميل المؤشرات
+        function loadIndicators() {
+            const container = document.getElementById('indicatorsContainer');
+            
+            // فلترة المؤشرات حسب الفئة ونوع المنشأة
+            const filteredKPIs = allKPIs.filter(kpi => 
+                kpi.category === currentCategory && 
+                kpi.facilityType.includes(currentFacility.type)
+            );
+            
+            // تحديث العدد الإجمالي
+            document.getElementById('totalCount').textContent = filteredKPIs.length;
+            
+            if (filteredKPIs.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <h3 style="margin-bottom: 8px;">لا توجد مؤشرات</h3>
+                        <p>لا توجد مؤشرات من فئة ${kpiCategories[currentCategory]?.name} متاحة لنوع منشأتك.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            filteredKPIs.forEach(kpi => {
+                const data = enteredData[kpi.code] || {};
+                const status = getIndicatorStatus(data);
+                
+                html += `
+                    <div class="indicator-card ${status}" id="card-${kpi.code}">
+                        <div class="indicator-header">
+                            <div style="flex: 1;">
+                                <div class="indicator-code">${kpi.code}</div>
+                                <div class="indicator-name">${kpi.name}</div>
+                                <div class="indicator-formula">${kpi.formula}</div>
+                            </div>
+                            <div class="indicator-status ${getStatusClass(status)}">
+                                ${getStatusText(status)}
+                            </div>
+                        </div>
+                        
+                        <div class="input-row">
+                            <!-- البسط -->
+                            <div class="input-group">
+                                <label class="input-label">
+                                    <i class="fas fa-arrow-up" style="color: #22c55e"></i>
+                                    البسط
+                                </label>
+                                <input type="number" 
+                                       class="num-input" 
+                                       id="num-${kpi.code}"
+                                       placeholder="${kpi.numerator}"
+                                       value="${data.numerator || ''}"
+                                       step="${kpi.unit === '%' ? '0.01' : '1'}"
+                                       oninput="updateIndicator('${kpi.code}')">
+                                <div class="input-help">
+                                    <div class="help-text">${kpi.numeratorHelp}</div>
+                                    <button class="help-btn" onclick="toggleHelp('${kpi.code}-num')">
+                                        <i class="fas fa-question-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- المقام -->
+                            <div class="input-group">
+                                <label class="input-label">
+                                    <i class="fas fa-arrow-down" style="color: #ef4444"></i>
+                                    المقام
+                                </label>
+                                <input type="number" 
+                                       class="num-input" 
+                                       id="den-${kpi.code}"
+                                       placeholder="${kpi.denominator}"
+                                       value="${data.denominator || ''}"
+                                       step="${kpi.unit === '%' ? '0.01' : '1'}"
+                                       oninput="updateIndicator('${kpi.code}')">
+                                <div class="input-help">
+                                    <div class="help-text">${kpi.denominatorHelp}</div>
+                                    <button class="help-btn" onclick="toggleHelp('${kpi.code}-den')">
+                                        <i class="fas fa-question-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- النتيجة -->
+                        ${data.result ? `
+                            <div class="result-box">
+                                <div class="result-content">
+                                    <div>
+                                        <div style="font-size: 12px; color: #64748b;">النتيجة</div>
+                                        <div class="result-value">${data.result} ${kpi.unit}</div>
+                                    </div>
+                                    <div class="result-status ${getResultStatusClass(data.result, kpi.target)}">
+                                        ${getResultStatusText(data.result, kpi.target)}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            updateEnteredCount();
+        }
+
+        // تحديث مؤشر
+        function updateIndicator(kpiCode) {
+            const numerator = parseFloat(document.getElementById(`num-${kpiCode}`)?.value);
+            const denominator = parseFloat(document.getElementById(`den-${kpiCode}`)?.value);
+            
+            const kpi = allKPIs.find(k => k.code === kpiCode);
+            if (!kpi) return;
+            
+            let result = null;
+            
+            if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+                switch(kpi.calculation) {
+                    case '(البسط × 100) / المقام':
+                        result = (numerator * 100) / denominator;
+                        break;
+                    case '(البسط / المقام) × 100':
+                        result = (numerator / denominator) * 100;
+                        break;
+                    case 'البسط / المقام':
+                        result = numerator / denominator;
+                        break;
+                    default:
+                        result = numerator / denominator;
+                }
+                
+                result = parseFloat(result.toFixed(2));
+            }
+            
+            enteredData[kpiCode] = {
+                numerator: isNaN(numerator) ? null : numerator,
+                denominator: isNaN(denominator) ? null : denominator,
+                result: result
+            };
+            
+            // تحديث العرض
+            updateCard(kpiCode, enteredData[kpiCode]);
+            updateProgress();
+            saveToStorage();
+        }
+
+        // تحديث البطاقة
+        function updateCard(kpiCode, data) {
+            const card = document.getElementById(`card-${kpiCode}`);
+            if (!card) return;
+            
+            const kpi = allKPIs.find(k => k.code === kpiCode);
+            if (!kpi) return;
+            
+            const status = getIndicatorStatus(data);
+            card.className = `indicator-card ${status}`;
+            
+            // تحديث شريط الحالة
+            const statusElement = card.querySelector('.indicator-status');
+            if (statusElement) {
+                statusElement.className = `indicator-status ${getStatusClass(status)}`;
+                statusElement.textContent = getStatusText(status);
+            }
+            
+            // تحديث النتيجة إذا كانت موجودة
+            if (data.result !== null && data.result !== undefined) {
+                let resultHtml = card.querySelector('.result-box');
+                if (!resultHtml) {
+                    resultHtml = document.createElement('div');
+                    resultHtml.className = 'result-box';
+                    card.appendChild(resultHtml);
+                }
+                
+                resultHtml.innerHTML = `
+                    <div class="result-content">
+                        <div>
+                            <div style="font-size: 12px; color: #64748b;">النتيجة</div>
+                            <div class="result-value">${data.result} ${kpi.unit}</div>
+                        </div>
+                        <div class="result-status ${getResultStatusClass(data.result, kpi.target)}">
+                            ${getResultStatusText(data.result, kpi.target)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                const resultHtml = card.querySelector('.result-box');
+                if (resultHtml) {
+                    resultHtml.remove();
+                }
+            }
+        }
+
+        // مساعدة
+        function toggleHelp(elementId) {
+            alert("نص التعليمات سيكون هنا في النافذة المنبثقة");
+        }
+
+        // حالة المؤشر
+        function getIndicatorStatus(data) {
+            if (data.numerator !== null && data.denominator !== null && data.result !== null) {
+                return 'entered';
+            } else if (data.numerator !== null || data.denominator !== null) {
+                return 'partial';
+            } else {
+                return 'empty';
+            }
+        }
+
+        function getStatusClass(status) {
+            return {
+                'entered': 'status-entered',
+                'partial': 'status-partial',
+                'empty': 'status-empty'
+            }[status] || 'status-empty';
+        }
+
+        function getStatusText(status) {
+            return {
+                'entered': 'مكتمل',
+                'partial': 'جزئي',
+                'empty': 'لم يُدخل'
+            }[status] || 'لم يُدخل';
+        }
+
+        // حالة النتيجة
+        function getResultStatusClass(result, target) {
+            if (!result) return '';
+            
+            const variance = Math.abs((result - target) / target * 100);
+            
+            if (variance <= 10) return 'status-entered';
+            if (variance <= 20) return 'status-partial';
+            return 'status-empty';
+        }
+
+        function getResultStatusText(result, target) {
+            if (!result) return '';
+            
+            const variance = Math.abs((result - target) / target * 100);
+            
+            if (variance <= 10) return 'جيد';
+            if (variance <= 20) return 'متوسط';
+            return 'يحتاج تحسين';
+        }
+
+        // التقدم
+        function updateProgress() {
+            const filteredKPIs = allKPIs.filter(kpi => 
+                kpi.category === currentCategory && 
+                kpi.facilityType.includes(currentFacility.type)
+            );
+            
+            const entered = filteredKPIs.filter(kpi => {
+                const data = enteredData[kpi.code];
+                return data && data.numerator !== null && data.denominator !== null && data.result !== null;
+            }).length;
+            
+            const total = filteredKPIs.length;
+            const percentage = total > 0 ? Math.round((entered / total) * 100) : 0;
+            
+            document.getElementById('progressText').textContent = `${entered}/${total} (${percentage}%)`;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('enteredCount').textContent = entered;
+        }
+
+        function updateEnteredCount() {
+            const filteredKPIs = allKPIs.filter(kpi => 
+                kpi.category === currentCategory && 
+                kpi.facilityType.includes(currentFacility.type)
+            );
+            
+            const entered = filteredKPIs.filter(kpi => {
+                const data = enteredData[kpi.code];
+                return data && data.numerator !== null && data.denominator !== null && data.result !== null;
+            }).length;
+            
+            document.getElementById('enteredCount').textContent = entered;
+        }
+
+        // التخزين
+        function saveToStorage() {
+            localStorage.setItem('kpiData', JSON.stringify(enteredData));
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('kpiData');
+            if (saved) {
+                enteredData = JSON.parse(saved);
+                updateProgress();
+            }
+        }
+
+        // حفظ مسودة
+        function saveDraft() {
+            saveToStorage();
+            showNotification('تم حفظ البيانات كمسودة', 'success');
+        }
+
+        // إرسال الكل
+        function submitAll() {
+            const enteredCount = Object.keys(enteredData).filter(kpiCode => {
+                const data = enteredData[kpiCode];
+                return data && data.numerator !== null && data.denominator !== null && data.result !== null;
+            }).length;
+            
+            if (enteredCount === 0) {
+                showNotification('لم تقم بإدخال أي بيانات', 'error');
+                return;
+            }
+            
+            showNotification(`تم إرسال ${enteredCount} مؤشر للمراجعة`, 'success');
+        }
+
+        // إشعارات
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            
+            text.textContent = message;
+            notification.style.display = 'flex';
+            
+            if (type === 'error') {
+                notification.style.borderRightColor = '#ef4444';
+                notification.querySelector('i').style.color = '#ef4444';
+            } else {
+                notification.style.borderRightColor = '#22c55e';
+                notification.querySelector('i').style.color = '#22c55e';
+            }
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // فلترة البحث
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.indicator-card');
+            
+            cards.forEach(card => {
+                const kpiCode = card.id.replace('card-', '');
+                const kpi = allKPIs.find(k => k.code === kpiCode);
+                
+                if (kpi && (
+                    kpi.code.toLowerCase().includes(searchTerm) ||
+                    kpi.name.toLowerCase().includes(searchTerm)
+                )) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // فلترة الحالة
+        document.getElementById('statusFilter').addEventListener('change', function(e) {
+            const filter = e.target.value;
+            const cards = document.querySelectorAll('.indicator-card');
+            
+            cards.forEach(card => {
+                if (filter === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    if (card.classList.contains(filter)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        // بدء النظام
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
