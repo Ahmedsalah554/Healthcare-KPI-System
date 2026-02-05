@@ -1,543 +1,1724 @@
-// ==================== البيانات الحقيقية ====================
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة مؤشرات الرعاية الصحية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
 
-// فئات المؤشرات الحقيقية (15 فئة) - نفسها
-const kpiCategories = {
-    WFM: { name: "القوى البشرية", count: 22, color: "#0ea5e9", icon: "fas fa-users" },
-    UTZ: { name: "استخدام الطاقة", count: 15, color: "#3b82f6", icon: "fas fa-bed" },
-    MP: { name: "جودة الخدمة", count: 19, color: "#ef4444", icon: "fas fa-stethoscope" },
-    ST: { name: "البنية التحتية", count: 4, color: "#f59e0b", icon: "fas fa-building" },
-    FM: { name: "الإدارة المالية", count: 2, color: "#8b5cf6", icon: "fas fa-money-bill-wave" },
-    IMT: { name: "المعلومات الطبية", count: 6, color: "#06b6d4", icon: "fas fa-file-medical" },
-    MM: { name: "إدارة الدواء", count: 3, color: "#ec4899", icon: "fas fa-pills" },
-    LAB: { name: "المعمل", count: 2, color: "#84cc16", icon: "fas fa-flask" },
-    DF: { name: "إدارة الأدوية", count: 6, color: "#f97316", icon: "fas fa-prescription-bottle" },
-    PCC: { name: "رعاية المرضى", count: 7, color: "#6366f1", icon: "fas fa-hand-holding-heart" },
-    INT: { name: "المبادرات", count: 7, color: "#14b8a6", icon: "fas fa-bullhorn" },
-    PS: { name: "سلامة المرضى", count: 12, color: "#eab308", icon: "fas fa-shield-alt" },
-    IPC: { name: "مكافحة العدوى", count: 8, color: "#a855f7", icon: "fas fa-virus-slash" },
-    OHS: { name: "الصحة المهنية", count: 8, color: "#06b6d4", icon: "fas fa-hard-hat" },
-    PHC: { name: "الرعاية الأولية", count: 41, color: "#22c55e", icon: "fas fa-clinic-medical" }
-};
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Cairo', sans-serif;
+        }
 
-// 👇 **هنا بداية التعديل بناءً على تحليل التصنيف من الملف**
-// سأنشئ مصفوفة مؤشرات تعكس التصنيف الصحيح حسب الألوان
+        body {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            direction: rtl;
+        }
 
-const allKPIs = [
-    // ==================== فئة WFM ====================
-    {
-        code: "WFM-01",
-        name: "نسبة تنفيذ الدورات التدريبية المدرجة بالخطة",
-        category: "WFM",
-        formula: "(إجمالي عدد الدورات المنفذة فعلياً × 100) ÷ إجمالي عدد الدورات المدرجة بالخطة",
-        numerator: "إجمالي عدد الدورات التدريبية المنفذة فعلياً",
-        numeratorHelp: "المستبعد: الدورات الغير مدرجة بالخطة - الدورات غير المكتملة",
-        denominator: "إجمالي عدد الدورات التدريبية المدرجة بالخطة",
-        denominatorHelp: "لا يوجد",
-        calculation: "(البسط × 100) / المقام",
-        unit: "%",
-        target: 90,
-        // ✅ **التصنيف الجديد بناءً على الملف:**
-        facilityTypes: ["hospital", "unit", "center"], // للجميع
-        isCritical: false
-    },
-    {
-        code: "WFM-02",
-        name: "نسبة الالتزام بالحضور للدورات التدريبية",
-        category: "WFM",
-        formula: "(عدد المتدربين الذين التزموا بالحضور × 100) ÷ إجمالي عدد المتدربين المستهدفين",
-        numerator: "عدد المتدربين الذين التزموا بالحضور",
-        numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
-        denominator: "إجمالي عدد المتدربين المستهدفين",
-        denominatorHelp: "لا يوجد",
-        calculation: "(البسط × 100) / المقام",
-        unit: "%",
-        target: 85,
-        facilityTypes: ["hospital", "unit", "center"], // للجميع
-        isCritical: false
-    },
-    {
-        code: "WFM-03",
-        name: "نسبة اجتياز المتدربين للدورات التدريبية",
-        category: "WFM",
-        formula: "(إجمالي عدد المتدربين الذين اجتازوا التقييم النهائي × 100) ÷ إجمالي عدد المتدربين الذين حضروا",
-        numerator: "إجمالي عدد المتدربين الذين اجتازوا التقييم النهائي",
-        numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
-        denominator: "إجمالي عدد المتدربين الذين حضروا",
-        denominatorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
-        calculation: "(البسط × 100) / المقام",
-        unit: "%",
-        target: 90,
-        facilityTypes: ["hospital", "unit", "center"], // للجميع
-        isCritical: false
-    },
-    {
-        code: "WFM-04",
-        name: "متوسط الدورات التدريبية التي حصل عليها كل موظف سنوياً",
-        category: "WFM",
-        formula: "إجمالي عدد المتدربين في جميع الدورات المنفذة ÷ إجمالي عدد العاملين",
-        numerator: "إجمالي عدد المتدربين في جميع الدورات المنفذة",
-        numeratorHelp: "المستبعد: العاملين الذين لم يستكملوا الدورات التدريبية",
-        denominator: "إجمالي عدد العاملين",
-        denominatorHelp: "المستبعد: العاملين الجدد (3 شهور)",
-        calculation: "البسط / المقام",
-        unit: "دورة/موظف",
-        target: 2,
-        facilityTypes: ["hospital", "unit", "center"], // للجميع
-        isCritical: false
-    },
-    {
-        code: "WFM-05",
-        name: "نسبة العاملين الصحيين المدربين على الإنعاش القلبي الرئوي (BLS)",
-        category: "WFM",
-        formula: "(عدد العاملين الصحيين المدربين على BLS × 100) ÷ إجمالي عدد العاملين الصحيين بالمنشأة",
-        numerator: "عدد العاملين الصحيين المدربين على BLS",
-        numeratorHelp: "المستبعد: المشاركون الذين لم يجتازوا التدريب بنجاح - المتدربين بجهات غير معتمدة - المتدربين الذين مضى على تدريبهم أكثر من سنتين",
-        denominator: "إجمالي عدد العاملين الصحيين بالمنشأة",
-        denominatorHelp: "المستبعد: العاملين الجدد (3 شهور)",
-        calculation: "(البسط × 100) / المقام",
-        unit: "%",
-        target: 80,
-        facilityTypes: ["hospital"], // ✅ **للمستشفيات فقط**
-        isCritical: true
-    },
-    {
-        code: "WFM-06",
-        name: "نسبة العاملين المدربين على الحماية المدنية عن طريق الدفاع المدني",
-        category: "WFM",
-        formula: "(عدد العاملين المدربين على الحماية المدنية × 100) ÷ إجمالي عدد العاملين بالمنشأة",
-        numerator: "عدد العاملين المدربين على الحماية المدنية",
-        numeratorHelp: "المستبعد: المشاركون الذين لم يجتازوا التدريب بنجاح - المتدربين بجهات غير معتمدة - المتدربين الذين مضى على تدريبهم أكثر من سنتين",
-        denominator: "إجمالي عدد العاملين بالمنشأة",
-        denominatorHelp: "المستبعد: العاملين الجدد (3 شهور)",
-        calculation: "(البسط × 100) / المقام",
-        unit: "%",
-        target: 70,
-        facilityTypes: ["hospital", "unit", "center"], // للجميع
-        isCritical: false
-    },
-    // ==================== مؤشرات للمستشفى فقط ====================
-    {
-        code: "WFM-12",
-        name: "تناسب عدد التمريض الى عدد أسرة الرعاية المركزة",
-        category: "WFM",
-        formula: "متوسط عدد تمريض فالشفت الرعاية المركزة ÷ إجمالي أسرة الرعاية المركزة",
-        numerator: "متوسط عدد تمريض فالشفت الرعاية المركزة",
-        numeratorHelp: "المستبعد: افراد التمريض تحت التدريب",
-        denominator: "إجمالي أسرة الرعاية المركزة",
-        denominatorHelp: "المستبعد: الاسرة خارج الخدمة",
-        calculation: "البسط / المقام",
-        unit: "ممرض/سرير",
-        target: 0.5,
-        facilityTypes: ["hospital"], // ✅ **للمستشفيات فقط**
-        isCritical: true
-    },
-    {
-        code: "WFM-14",
-        name: "تناسب عدد التمريض الي عدد أسرة الداخلي",
-        category: "WFM",
-        formula: "متوسط عدد تمريض فالشفت الأقسام الداخلية ÷ إجمالي عدد أسرة الداخلي",
-        numerator: "متوسط عدد تمريض فالشفت الأقسام الداخلية",
-        numeratorHelp: "المستبعد: افراد التمريض تحت التدريب",
-        denominator: "إجمالي عدد أسرة الداخلي",
-        denominatorHelp: "المستبعد: الاسرة خارج الخدمة",
-        calculation: "البسط / المقام",
-        unit: "ممرض/سرير",
-        target: 0.2,
-        facilityTypes: ["hospital"], // ✅ **للمستشفيات فقط**
-        isCritical: true
-    },
-    {
-        code: "WFM-19",
-        name: "تناسب عدد التمريض الى العيادات الخارجية",
-        category: "WFM",
-        formula: "إجمالي عدد تمريض العيادات ÷ عدد غرف العيادات",
-        numerator: "إجمالي عدد تمريض العيادات",
-        numeratorHelp: "المستبعد: افراد التمريض تحت التدريب",
-        denominator: "عدد غرف العيادات",
-        denominatorHelp: "لا يوجد",
-        calculation: "البسط / المقام",
-        unit: "ممرض/غرفة",
-        target: 1.5,
-        facilityTypes: ["hospital"], // ✅ **للمستشفيات فقط**
-        isCritical: false
-    },
-    {
-        code: "WFM-20",
-        name: "تناسب عدد التمريض الى غرف قسم الطوارئ",
-        category: "WFM",
-        formula: "متوسط عدد تمريض فالشفت بقسم الطوارئ ÷ عدد غرف الاستقبال والطوارئ",
-        numerator: "متوسط عدد تمريض فالشفت بقسم الطوارئ",
-        numeratorHelp: "المستبعد: افراد التمريض تحت التدريب",
-        denominator: "عدد غرف الاستقبال والطوارئ",
-        denominatorHelp: "لا يوجد",
-        calculation: "البسط / المقام",
-        unit: "ممرض/غرفة",
-        target: 1.2,
-        facilityTypes: ["hospital"], // ✅ **للمستشفيات فقط**
-        isCritical: true
-    },
-    // ==================== مؤشرات للوحدات فقط ====================
-    {
-        code: "WFM-11",
-        name: "تناسب عدد التمريض إلى عدد ماكينات الغسيل الكلوي",
-        category: "WFM",
-        formula: "إجمالي عدد تمريض الغسيل الكلوي ÷ عدد مرضى الغسيل الكلوي",
-        numerator: "إجمالي عدد تمريض الغسيل الكلوي",
-        numeratorHelp: "المستبعد: افراد التمريض تحت التدريب",
-        denominator: "عدد مرضى الغسيل الكلوي",
-        denominatorHelp: "المستبعد: الماكينات خارج الخدمة",
-        calculation: "البسط / المقام",
-        unit: "ممرض/مريض",
-        target: 0.3,
-        facilityTypes: ["unit", "center"], // ✅ **لللوحدات والمراكز فقط**
-        isCritical: false
-    },
-    // ==================== مؤشرات للمراكز فقط ====================
-    {
-        code: "PHC-01",
-        name: "تناسب عدد أطباء الأسرة : عدد الأسر/الأفراد",
-        category: "PHC",
-        formula: "إجمالي عدد أطباء الأسرة ÷ إجمالي عدد الأفراد أو الأسر المسجلين",
-        numerator: "إجمالي عدد أطباء الأسرة",
-        numeratorHelp: "المستبعد: الاخصائيين في تخصصات أخرى",
-        denominator: "إجمالي عدد الأفراد أو الأسر المسجلين",
-        denominatorHelp: "لا يوجد",
-        calculation: "البسط / المقام",
-        unit: "طبيب/فرد",
-        target: 0.002,
-        facilityTypes: ["center"], // ✅ **للمراكز فقط**
-        isCritical: false
-    },
-    // ... وهكذا لكل المؤشرات الباقية
-];
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);
+            color: white;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 12px rgba(30,58,95,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-// ==================== إضافة متغيرات جديدة ====================
-let currentFacility = {
-    id: 1,
-    name: "مستشفى القاهرة المركزي",
-    type: "hospital" // hospital, unit, center
-};
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-let enteredData = {};
-let currentCategory = "WFM";
+        .logo i {
+            font-size: 24px;
+        }
 
-// ==================== إضافة وظيفة تغيير نوع المنشأة ====================
-function changeFacilityType(type) {
-    currentFacility.type = type;
-    
-    // تحديث واجهة نوع المنشأة
-    const facilityName = {
-        hospital: "مستشفى",
-        unit: "وحدة صحية",
-        center: "مركز صحي"
-    }[type];
-    
-    document.querySelector('.facility-info div:first-child').innerHTML = 
-        `<i class="fas fa-hospital"></i> ${currentFacility.name} (${facilityName})`;
-    
-    // تحديث عدد المؤشرات المتاحة
-    const availableCount = allKPIs.filter(kpi => 
-        kpi.facilityTypes.includes(type)
-    ).length;
-    
-    document.querySelector('.facility-info div:nth-child(2)').textContent = 
-        `نوع المنشأة: ${facilityName} | المؤشرات المتاحة: ${availableCount} مؤشر`;
-    
-    // إعادة تحميل التبويبات والمؤشرات
-    loadTabs();
-    loadIndicators();
-}
+        .logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+        }
 
-// ==================== تعديل دالة loadTabs ====================
-function loadTabs() {
-    const tabsContainer = document.getElementById('kpiTabs');
-    tabsContainer.innerHTML = '';
-    
-    Object.keys(kpiCategories).forEach(categoryId => {
-        const category = kpiCategories[categoryId];
-        
-        // حساب عدد المؤشرات المتاحة لهذه المنشأة
-        const availableKPIs = allKPIs.filter(kpi => 
-            kpi.category === categoryId && 
-            kpi.facilityTypes.includes(currentFacility.type)
-        ).length;
-        
-        if (availableKPIs === 0) return; // لا تعرض تبويب بدون مؤشرات
-        
-        const tab = document.createElement('button');
-        tab.className = `tab-btn ${categoryId === currentCategory ? 'active' : ''}`;
-        tab.dataset.category = categoryId;
-        tab.innerHTML = `
-            <i class="${category.icon}"></i>
-            ${category.name}
-            <span style="background: ${category.color}22; color: ${category.color}; padding: 1px 6px; border-radius: 10px; font-size: 11px;">
-                ${availableKPIs}
-            </span>
-        `;
-        
-        tab.addEventListener('click', () => {
-            currentCategory = categoryId;
-            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            loadIndicators();
-        });
-        
-        tabsContainer.appendChild(tab);
-    });
-}
+        .nav {
+            display: flex;
+            gap: 8px;
+        }
 
-// ==================== تعديل دالة loadIndicators ====================
-function loadIndicators() {
-    const container = document.getElementById('indicatorsContainer');
-    
-    // فلترة المؤشرات حسب الفئة ونوع المنشأة
-    const filteredKPIs = allKPIs.filter(kpi => 
-        kpi.category === currentCategory && 
-        kpi.facilityTypes.includes(currentFacility.type)
-    );
-    
-    // تحديث العدد الإجمالي
-    document.getElementById('totalCount').textContent = filteredKPIs.length;
-    
-    if (filteredKPIs.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px; color: #64748b;">
-                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
-                <h3 style="margin-bottom: 8px;">لا توجد مؤشرات</h3>
-                <p>لا توجد مؤشرات من فئة ${kpiCategories[currentCategory]?.name} متاحة لنوع منشأتك.</p>
-                <button onclick="showAllKPIs()" style="margin-top: 15px; padding: 8px 16px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    <i class="fas fa-eye"></i> عرض جميع المؤشرات
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .nav-btn.active {
+            background: rgba(255,255,255,0.25);
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-right: 16px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .user-role {
+            background: rgba(255,255,255,0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card.green { border-color: var(--success); }
+        .stat-card.orange { border-color: var(--warning); }
+        .stat-card.red { border-color: var(--danger); }
+        .stat-card.blue { border-color: var(--primary-light); }
+
+        .stat-title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive { color: var(--success); }
+        .stat-change.negative { color: var(--danger); }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .data-table th {
+            background: var(--light);
+            padding: 12px 16px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-secondary);
+        }
+
+        .data-table tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-primary { background: rgba(30,64,175,0.1); color: var(--primary); }
+        .badge-success { background: rgba(16,185,129,0.1); color: var(--success); }
+        .badge-warning { background: rgba(245,158,11,0.1); color: var(--warning); }
+        .badge-danger { background: rgba(239,68,68,0.1); color: var(--danger); }
+        .badge-info { background: rgba(59,130,246,0.1); color: var(--primary-light); }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3a8a;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* KPI Cards */
+        .kpi-card {
+            border-right: 4px solid;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .kpi-card.UTZ { border-color: #3b82f6; }
+        .kpi-card.MP { border-color: #ef4444; }
+        .kpi-card.WFM { border-color: #10b981; }
+        .kpi-card.FM { border-color: #f59e0b; }
+
+        .kpi-code {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .kpi-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Login Screen */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f2544 0%, #1e3a5f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        /* Charts */
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.2);
+            color: var(--success);
+        }
+
+        .alert-danger {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: var(--danger);
+        }
+
+        .alert-info {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.2);
+            color: var(--primary-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                height: auto;
+                padding: 12px;
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                margin: 12px 0;
+            }
+            
+            .user-info {
+                border: none;
+                padding: 0;
+                margin-top: 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hide/Show */
+        .hidden {
+            display: none !important;
+        }
+
+        .visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-icon">🏥</div>
+            <h1 class="login-title">نظام إدارة مؤشرات الأداء</h1>
+            <p class="login-subtitle">وزارة الصحة والسكان</p>
+            
+            <div class="form-group">
+                <label class="form-label">اسم المستخدم</label>
+                <select id="loginUser" class="form-select">
+                    <option value="">اختر حساب تجريبي</option>
+                    <option value="admin">👨‍💼 مدير عام (admin@moh.gov)</option>
+                    <option value="director">👔 مدير مديرية (director@moh.gov)</option>
+                    <option value="manager">👩‍⚕️ مدير منشأة (manager@hospital.gov)</option>
+                    <option value="entry">📝 مدخل بيانات (entry@hospital.gov)</option>
+                    <option value="viewer">👁️ مشاهد (viewer@moh.gov)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">كلمة المرور</label>
+                <input type="password" id="loginPassword" class="form-input" value="123456" readonly>
+                <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">كلمة المرور: 123456 (جميع الحسابات)</small>
+            </div>
+            
+            <div id="loginError" class="alert alert-danger hidden">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>الرجاء اختيار حساب مستخدم</span>
+            </div>
+            
+            <button id="loginBtn" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </button>
+            
+            <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; font-size: 12px; color: #64748b; text-align: right;">
+                <div style="font-weight: 600; margin-bottom: 8px;">حسابات تجريبية:</div>
+                <div style="margin-bottom: 4px;">👨‍💼 مدير عام - صلاحيات كاملة</div>
+                <div style="margin-bottom: 4px;">👔 مدير مديرية - مراجعة وإدارة</div>
+                <div>📝 مدخل بيانات - إدخال بيانات فقط</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-hospital"></i>
+                <h1>نظام مؤشرات الرعاية الصحية</h1>
+            </div>
+            
+            <div class="nav">
+                <button class="nav-btn active" data-page="dashboard">
+                    <i class="fas fa-home"></i> الرئيسية
+                </button>
+                <button class="nav-btn" data-page="dataEntry">
+                    <i class="fas fa-edit"></i> إدخال بيانات
+                </button>
+                <button class="nav-btn" data-page="review">
+                    <i class="fas fa-check-circle"></i> مراجعة
+                </button>
+                <button class="nav-btn" data-page="reports">
+                    <i class="fas fa-chart-bar"></i> تقارير
+                </button>
+                <button class="nav-btn" data-page="facilities">
+                    <i class="fas fa-hospital-alt"></i> المنشآت
+                </button>
+                <button class="nav-btn" data-page="users">
+                    <i class="fas fa-users"></i> المستخدمين
                 </button>
             </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    
-    filteredKPIs.forEach(kpi => {
-        const data = enteredData[kpi.code] || {};
-        const status = getIndicatorStatus(data);
-        
-        // إضافة بادئة حرجة إذا كان المؤشر حساس
-        const criticalBadge = kpi.isCritical ? 
-            `<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-right: 8px;">حرج</span>` : '';
-        
-        html += `
-            <div class="indicator-card ${status}" id="card-${kpi.code}">
-                <div class="indicator-header">
-                    <div style="flex: 1;">
-                        <div class="indicator-code">
-                            ${criticalBadge}
-                            ${kpi.code}
+            
+            <div class="user-info">
+                <div style="text-align: right;">
+                    <div style="font-size: 13px; font-weight: 600;" id="userName">أحمد السعيد</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.7);" id="userEmail">admin@moh.gov</div>
+                </div>
+                <div class="user-role" id="userRole">مدير عام</div>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> خروج
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container">
+            <!-- Dashboard -->
+            <div id="dashboardPage" class="page">
+                <h1 class="page-title">🏠 لوحة التحكم</h1>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">إجمالي البيانات</div>
+                        <div class="stat-value" id="totalSubmissions">24</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 12% عن الشهر الماضي
                         </div>
-                        <div class="indicator-name">${kpi.name}</div>
-                        <div class="indicator-formula">${kpi.formula}</div>
                     </div>
-                    <div class="indicator-status ${getStatusClass(status)}">
-                        ${getStatusText(status)}
+                    
+                    <div class="stat-card orange">
+                        <div class="stat-title">قيد المراجعة</div>
+                        <div class="stat-value" id="pendingSubmissions">8</div>
+                        <div class="stat-change negative">
+                            <i class="fas fa-clock"></i> تحتاج إلى مراجعة
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card green">
+                        <div class="stat-title">تم الاعتماد</div>
+                        <div class="stat-value" id="approvedSubmissions">14</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-check-circle"></i> 85% معدل القبول
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card blue">
+                        <div class="stat-title">المنشآت النشطة</div>
+                        <div class="stat-value" id="activeFacilities">5</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-hospital"></i> جميعها نشطة
+                        </div>
                     </div>
                 </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h2><i class="fas fa-chart-line"></i> أداء المؤشرات الرئيسية</h2>
+                        <div class="chart-container">
+                            <canvas id="kpiChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2><i class="fas fa-bell"></i> التنبيهات الحديثة</h2>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>بيانات جديدة:</strong> مستشفى القاهرة أرسل بيانات مارس 2024
+                                    <div style="font-size: 12px; color: #475569; margin-top: 2px;">قبل 2 ساعة</div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                <div>
+                                    <strong>تم الاعتماد:</strong> بيانات مستشفى الإسكندرية لشهر فبراير
+                                    <div style="font-size: 12px; color: #475569; margin-top: 2px;">قبل 1 يوم</div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div>
+                                    <strong>بيانات منتهية:</strong> 3 منشآت لم ترسل بيانات الشهر الحالي
+                                    <div style="font-size: 12px; color: #475569; margin-top: 2px;">قبل 3 أيام</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-history"></i> أحدث البيانات المعتمدة</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>المنشأة</th>
+                                    <th>الشهر</th>
+                                    <th>المؤشرات</th>
+                                    <th>الحالة</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentSubmissions">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Entry -->
+            <div id="dataEntryPage" class="page hidden">
+                <h1 class="page-title">📝 إدخال بيانات جديدة</h1>
                 
-                <div class="input-row">
-                    <!-- البسط -->
-                    <div class="input-group">
-                        <label class="input-label">
-                            <i class="fas fa-arrow-up" style="color: #22c55e"></i>
-                            البسط
-                        </label>
-                        <input type="number" 
-                               class="num-input" 
-                               id="num-${kpi.code}"
-                               placeholder="${kpi.numerator}"
-                               value="${data.numerator || ''}"
-                               step="${kpi.unit === '%' ? '0.01' : '1'}"
-                               oninput="updateIndicator('${kpi.code}')">
-                        <div class="input-help">
-                            <div class="help-text">${kpi.numeratorHelp}</div>
-                            <button class="help-btn" onclick="toggleHelp('${kpi.code}-num')">
-                                <i class="fas fa-question-circle"></i>
+                <div class="card">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">المنشأة</label>
+                            <select id="entryFacility" class="form-select">
+                                <option value="">اختر المنشأة</option>
+                                <option value="1">مستشفى القاهرة المركزي</option>
+                                <option value="2">مستشفى الإسكندرية العام</option>
+                                <option value="3">مستشفى المنصورة الدولي</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">الشهر</label>
+                            <input type="month" id="entryMonth" class="form-input" value="2024-03">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs" id="kpiTabs">
+                    <button class="tab-btn active" data-category="UTZ">استخدام الطاقة</button>
+                    <button class="tab-btn" data-category="MP">جودة الخدمة</button>
+                    <button class="tab-btn" data-category="WFM">القوى البشرية</button>
+                    <button class="tab-btn" data-category="FM">مالية</button>
+                </div>
+
+                <div id="kpiForms">
+                    <!-- Will be populated by JS -->
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button id="resetBtn" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> مسح الكل
+                        </button>
+                        <button id="submitBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> حفظ البيانات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review -->
+            <div id="reviewPage" class="page hidden">
+                <h1 class="page-title">🔍 مراجعة البيانات</h1>
+                
+                <div class="card">
+                    <h2><i class="fas fa-tasks"></i> البيانات قيد المراجعة</h2>
+                    
+                    <div id="pendingList">
+                        <!-- Will be populated by JS -->
+                    </div>
+                    
+                    <div id="noPending" class="hidden" style="text-align: center; padding: 40px 20px; color: #64748b;">
+                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>لا توجد بيانات قيد المراجعة حالياً</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports -->
+            <div id="reportsPage" class="page hidden">
+                <h1 class="page-title">📊 التقارير والتحليلات</h1>
+                
+                <div class="card">
+                    <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">المنشأة</label>
+                            <select id="reportFacility" class="form-select">
+                                <option value="all">جميع المنشآت</option>
+                                <option value="1">مستشفى القاهرة المركزي</option>
+                                <option value="2">مستشفى الإسكندرية العام</option>
+                                <option value="3">مستشفى المنصورة الدولي</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">الفترة</label>
+                            <select id="reportPeriod" class="form-select">
+                                <option value="2024-03">مارس 2024</option>
+                                <option value="2024-02">فبراير 2024</option>
+                                <option value="2024-01">يناير 2024</option>
+                                <option value="2023-12">ديسمبر 2023</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: flex-end; gap: 8px;">
+                            <button id="exportBtn" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> تصدير
+                            </button>
+                            <button id="refreshBtn" class="btn btn-primary">
+                                <i class="fas fa-sync"></i> تحديث
                             </button>
                         </div>
                     </div>
                     
-                    <!-- المقام -->
-                    <div class="input-group">
-                        <label class="input-label">
-                            <i class="fas fa-arrow-down" style="color: #ef4444"></i>
-                            المقام
-                        </label>
-                        <input type="number" 
-                               class="num-input" 
-                               id="den-${kpi.code}"
-                               placeholder="${kpi.denominator}"
-                               value="${data.denominator || ''}"
-                               step="${kpi.unit === '%' ? '0.01' : '1'}"
-                               oninput="updateIndicator('${kpi.code}')">
-                        <div class="input-help">
-                            <div class="help-text">${kpi.denominatorHelp}</div>
-                            <button class="help-btn" onclick="toggleHelp('${kpi.code}-den')">
-                                <i class="fas fa-question-circle"></i>
-                            </button>
+                    <div class="grid-2">
+                        <div>
+                            <h3 style="margin-bottom: 16px;">مقارنة أداء المنشآت</h3>
+                            <div class="chart-container">
+                                <canvas id="facilityChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 style="margin-bottom: 16px;">توزيع المؤشرات</h3>
+                            <div class="chart-container">
+                                <canvas id="distributionChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- النتيجة -->
-                ${data.result ? `
-                    <div class="result-box">
-                        <div class="result-content">
-                            <div>
-                                <div style="font-size: 12px; color: #64748b;">النتيجة</div>
-                                <div class="result-value">${data.result} ${kpi.unit}</div>
-                            </div>
-                            <div class="result-status ${getResultStatusClass(data.result, kpi.target)}">
-                                ${getResultStatusText(data.result, kpi.target)}
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    updateEnteredCount();
-}
 
-// ==================== إضافة دالة لعرض جميع المؤشرات ====================
-function showAllKPIs() {
-    // هذا سيعرض جميع المؤشرات حتى التي لا تنطبق مع لون خلفية مختلف
-    const allKPIsForCurrentCategory = allKPIs.filter(kpi => 
-        kpi.category === currentCategory
-    );
-    
-    const container = document.getElementById('indicatorsContainer');
-    let html = '';
-    
-    allKPIsForCurrentCategory.forEach(kpi => {
-        const isApplicable = kpi.facilityTypes.includes(currentFacility.type);
-        const data = enteredData[kpi.code] || {};
-        const status = getIndicatorStatus(data);
-        
-        html += `
-            <div class="indicator-card ${status} ${!isApplicable ? 'not-applicable' : ''}" 
-                 id="card-${kpi.code}"
-                 style="${!isApplicable ? 'opacity: 0.6; background: #f8fafc;' : ''}">
-                <div class="indicator-header">
-                    <div style="flex: 1;">
-                        <div class="indicator-code">
-                            ${!isApplicable ? '<span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-right: 8px;">غير مطبق</span>' : ''}
-                            ${kpi.code}
-                        </div>
-                        <div class="indicator-name">${kpi.name}</div>
-                        <div class="indicator-formula">${kpi.formula}</div>
+                <div class="card">
+                    <h2><i class="fas fa-table"></i> البيانات التفصيلية</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>المؤشر</th>
+                                    <th>القيمة</th>
+                                    <th>الهدف</th>
+                                    <th>الانحراف</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportDetails">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
-                    ${!isApplicable ? 
-                        '<div style="font-size: 12px; color: #64748b;">هذا المؤشر غير مطبق لنوع منشأتك</div>' : 
-                        `<div class="indicator-status ${getStatusClass(status)}">
-                            ${getStatusText(status)}
-                        </div>`
+                </div>
+            </div>
+
+            <!-- Facilities -->
+            <div id="facilitiesPage" class="page hidden">
+                <h1 class="page-title">🏥 إدارة المنشآت</h1>
+                
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">قائمة المنشآت</h2>
+                        <button class="btn btn-primary" id="addFacilityBtn">
+                            <i class="fas fa-plus"></i> إضافة منشأة
+                        </button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم المنشأة</th>
+                                    <th>النوع</th>
+                                    <th>المحافظة</th>
+                                    <th>المديرية</th>
+                                    <th>الأسرة</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="facilitiesList">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users -->
+            <div id="usersPage" class="page hidden">
+                <h1 class="page-title">👥 إدارة المستخدمين</h1>
+                
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">قائمة المستخدمين</h2>
+                        <button class="btn btn-primary" id="addUserBtn">
+                            <i class="fas fa-user-plus"></i> إضافة مستخدم
+                        </button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>الاسم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>الدور</th>
+                                    <th>المنشأة/المديرية</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersList">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="approvalModal" class="modal hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%;">
+            <h2 style="margin-bottom: 16px;">مراجعة البيانات</h2>
+            <p id="modalMessage" style="margin-bottom: 20px;"></p>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="cancelBtn" class="btn btn-secondary">إلغاء</button>
+                <button id="confirmApproveBtn" class="btn btn-success">✓ اعتماد</button>
+                <button id="confirmRejectBtn" class="btn btn-danger">✗ رفض</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Alert -->
+    <div id="successAlert" class="alert alert-success hidden" style="position: fixed; top: 20px; right: 20px; z-index: 1001; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <i class="fas fa-check-circle"></i>
+        <span id="successMessage">تم العملية بنجاح</span>
+    </div>
+
+    <script>
+        // البيانات التأسيسية
+        const users = {
+            admin: {
+                name: "أحمد السعيد",
+                email: "admin@moh.gov",
+                role: "مدير عام",
+                permissions: ['view', 'submit', 'approve', 'manage_facilities', 'manage_users']
+            },
+            director: {
+                name: "محمد حسن",
+                email: "director@moh.gov",
+                role: "مدير مديرية",
+                permissions: ['view', 'approve', 'manage_facilities', 'manage_users']
+            },
+            manager: {
+                name: "سارة خالد",
+                email: "manager@hospital.gov",
+                role: "مدير منشأة",
+                permissions: ['view', 'submit', 'approve']
+            },
+            entry: {
+                name: "ليلى عمر",
+                email: "entry@hospital.gov",
+                role: "مدخل بيانات",
+                permissions: ['view', 'submit']
+            },
+            viewer: {
+                name: "علي ماجد",
+                email: "viewer@moh.gov",
+                role: "مشاهد",
+                permissions: ['view']
+            }
+        };
+
+        const facilities = [
+            {
+                id: 1,
+                name: "مستشفى القاهرة المركزي",
+                type: "مستشفى مركزي",
+                governorate: "القاهرة",
+                directorate: "شرق القاهرة",
+                beds: 450,
+                status: "نشط"
+            },
+            {
+                id: 2,
+                name: "مستشفى الإسكندرية العام",
+                type: "مستشفى عام",
+                governorate: "الإسكندرية",
+                directorate: "غرب الإسكندرية",
+                beds: 300,
+                status: "نشط"
+            },
+            {
+                id: 3,
+                name: "مستشفى المنصورة الدولي",
+                type: "مستشفى تعليمي",
+                governorate: "الدقهلية",
+                directorate: "المنصورة",
+                beds: 600,
+                status: "نشط"
+            },
+            {
+                id: 4,
+                name: "مركز صحي العبور",
+                type: "مركز صحي",
+                governorate: "القاهرة",
+                directorate: "شمال القاهرة",
+                beds: 50,
+                status: "نشط"
+            },
+            {
+                id: 5,
+                name: "وحدة صحية المعادي",
+                type: "وحدة صحية",
+                governorate: "القاهرة",
+                directorate: "جنوب القاهرة",
+                beds: 20,
+                status: "غير نشط"
+            }
+        ];
+
+        const kpiCategories = {
+            UTZ: {
+                name: "استخدام الطاقة الاستيعابية",
+                color: "#3b82f6",
+                indicators: [
+                    { code: "UTZ-01", name: "نسبة اشغال الأقسام الداخلية", unit: "%", target: 85 },
+                    { code: "UTZ-02", name: "نسبة اشغال الرعايات المركزة", unit: "%", target: 80 },
+                    { code: "UTZ-03", name: "نسبة اشغال رعايات حديثي الولادة", unit: "%", target: 75 },
+                    { code: "UTZ-04", name: "إجمالي تردد العيادات الخارجية", unit: "زيارة", target: 10000 }
+                ]
+            },
+            MP: {
+                name: "جودة الخدمة الطبية",
+                color: "#ef4444",
+                indicators: [
+                    { code: "MP-01", name: "نسبة وفيات الأقسام الداخلية", unit: "%", target: 3 },
+                    { code: "MP-02", name: "نسبة الوفيات لكل قسم", unit: "%", target: 2 },
+                    { code: "MP-03", name: "نسبة الوفيات للرعاية المركزة", unit: "%", target: 20 }
+                ]
+            },
+            WFM: {
+                name: "إدارة القوى البشرية",
+                color: "#10b981",
+                indicators: [
+                    { code: "WFM-01", name: "نسبة تنفيذ الدورات التدريبية", unit: "%", target: 90 },
+                    { code: "WFM-02", name: "نسبة الالتزام بالحضور للتدريب", unit: "%", target: 85 },
+                    { code: "WFM-03", name: "نسبة اجتياز المتدربين", unit: "%", target: 90 },
+                    { code: "WFM-04", name: "متوسط الدورات لكل موظف", unit: "دورة", target: 2 },
+                    { code: "WFM-05", name: "نسبة المدربين على الإنعاش القلبي", unit: "%", target: 80 }
+                ]
+            },
+            FM: {
+                name: "الإدارة المالية",
+                color: "#f59e0b",
+                indicators: [
+                    { code: "FM-01", name: "إجمالي دخل المنشأة", unit: "جنيه", target: 1000000 },
+                    { code: "FM-02", name: "نسبة الزيادة في الإيرادات", unit: "%", target: 10 }
+                ]
+            }
+        };
+
+        let currentUser = null;
+        let submissions = [];
+        let currentSubmissionId = null;
+
+        // تهيئة التطبيق
+        document.addEventListener('DOMContentLoaded', function() {
+            // تسجيل الدخول
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleLogin();
+            });
+
+            // التنقل
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const page = this.dataset.page;
+                    showPage(page);
+                });
+            });
+
+            // تسجيل الخروج
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+            // إدارة المحتوى
+            document.getElementById('resetBtn')?.addEventListener('click', resetForm);
+            document.getElementById('submitBtn')?.addEventListener('click', submitData);
+            document.getElementById('exportBtn')?.addEventListener('click', exportData);
+            document.getElementById('refreshBtn')?.addEventListener('click', refreshReports);
+            document.getElementById('addFacilityBtn')?.addEventListener('click', () => alert('إضافة منشأة جديدة'));
+            document.getElementById('addUserBtn')?.addEventListener('click', () => alert('إضافة مستخدم جديد'));
+
+            // المودال
+            document.getElementById('cancelBtn').addEventListener('click', hideModal);
+            document.getElementById('confirmApproveBtn').addEventListener('click', approveSubmission);
+            document.getElementById('confirmRejectBtn').addEventListener('click', rejectSubmission);
+
+            // إضافة بيانات تجريبية
+            loadSampleData();
+        });
+
+        function handleLogin() {
+            const userType = document.getElementById('loginUser').value;
+            if (!userType) {
+                document.getElementById('loginError').classList.remove('hidden');
+                return;
+            }
+
+            currentUser = users[userType];
+            
+            // تحديث واجهة المستخدم
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userRole').textContent = currentUser.role;
+            
+            // إظهار التطبيق وإخفاء شاشة الدخول
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            
+            // ضبط الصلاحيات
+            updatePermissions();
+            
+            // تحميل البيانات الأولية
+            loadDashboard();
+            loadFacilities();
+            loadUsers();
+            
+            showSuccess('تم تسجيل الدخول بنجاح!');
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function updatePermissions() {
+            const canSubmit = currentUser.permissions.includes('submit');
+            const canApprove = currentUser.permissions.includes('approve');
+            const canManage = currentUser.permissions.includes('manage_facilities');
+            
+            // إخفاء الأزرار حسب الصلاحيات
+            document.querySelectorAll('[data-page="dataEntry"]').forEach(el => {
+                if (!canSubmit) el.style.display = 'none';
+            });
+            
+            document.querySelectorAll('[data-page="review"]').forEach(el => {
+                if (!canApprove) el.style.display = 'none';
+            });
+            
+            document.querySelectorAll('[data-page="facilities"], [data-page="users"]').forEach(el => {
+                if (!canManage) el.style.display = 'none';
+            });
+        }
+
+        function showPage(pageId) {
+            // تحديث الأزرار النشطة
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.page === pageId) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // إخفاء جميع الصفحات
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+
+            // إظهار الصفحة المطلوبة
+            document.getElementById(pageId + 'Page').classList.remove('hidden');
+
+            // تحميل محتوى الصفحة
+            switch(pageId) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'dataEntry':
+                    loadDataEntry();
+                    break;
+                case 'review':
+                    loadReview();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+                case 'facilities':
+                    loadFacilities();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+            }
+        }
+
+        function loadDashboard() {
+            // تحديث الإحصائيات
+            const totalSubs = submissions.length;
+            const pendingSubs = submissions.filter(s => s.status === 'pending').length;
+            const approvedSubs = submissions.filter(s => s.status === 'approved').length;
+            
+            document.getElementById('totalSubmissions').textContent = totalSubs;
+            document.getElementById('pendingSubmissions').textContent = pendingSubs;
+            document.getElementById('approvedSubmissions').textContent = approvedSubs;
+            document.getElementById('activeFacilities').textContent = facilities.filter(f => f.status === 'نشط').length;
+
+            // تحديث الجدول
+            const recentSubs = submissions.slice(-5).reverse();
+            const tbody = document.getElementById('recentSubmissions');
+            tbody.innerHTML = '';
+            
+            recentSubs.forEach(sub => {
+                const facility = facilities.find(f => f.id == sub.facilityId);
+                const row = `
+                    <tr>
+                        <td>${facility?.name || 'غير معروف'}</td>
+                        <td>${sub.month}</td>
+                        <td>${Object.keys(sub.data).length}</td>
+                        <td><span class="badge ${sub.status === 'approved' ? 'badge-success' : sub.status === 'pending' ? 'badge-warning' : 'badge-danger'}">${sub.status === 'approved' ? 'معتمد' : sub.status === 'pending' ? 'قيد المراجعة' : 'مرفوض'}</span></td>
+                        <td>${new Date(sub.date).toLocaleDateString('ar-EG')}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // رسم المخطط
+            drawKPITrendChart();
+        }
+
+        function loadDataEntry() {
+            // إعداد التبويبات
+            document.querySelectorAll('#kpiTabs .tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('#kpiTabs .tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    loadKPIForm(this.dataset.category);
+                });
+            });
+
+            // تحميل أول تبويب
+            loadKPIForm('UTZ');
+        }
+
+        function loadKPIForm(categoryId) {
+            const category = kpiCategories[categoryId];
+            const container = document.getElementById('kpiForms');
+            
+            let html = `<div class="card fade-in"><h2>${category.name}</h2><div class="grid-2">`;
+            
+            category.indicators.forEach(indicator => {
+                html += `
+                    <div class="form-group">
+                        <label class="form-label">${indicator.code}: ${indicator.name}</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="number" 
+                                   id="${indicator.code}" 
+                                   class="form-input" 
+                                   placeholder="أدخل القيمة"
+                                   step="${indicator.unit === '%' ? '0.1' : '1'}"
+                                   style="flex: 1;">
+                            <span style="padding: 10px; background: #f8fafc; border-radius: 8px; min-width: 60px; text-align: center;">${indicator.unit}</span>
+                        </div>
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">الهدف: ${indicator.target} ${indicator.unit}</small>
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        function submitData() {
+            const facilityId = document.getElementById('entryFacility').value;
+            const month = document.getElementById('entryMonth').value;
+            
+            if (!facilityId) {
+                showAlert('الرجاء اختيار المنشأة', 'danger');
+                return;
+            }
+            
+            if (!month) {
+                showAlert('الرجاء اختيار الشهر', 'danger');
+                return;
+            }
+
+            // جمع البيانات من جميع المؤشرات
+            const data = {};
+            let hasData = false;
+            
+            for (const category in kpiCategories) {
+                for (const indicator of kpiCategories[category].indicators) {
+                    const input = document.getElementById(indicator.code);
+                    if (input && input.value) {
+                        data[indicator.code] = parseFloat(input.value);
+                        hasData = true;
                     }
-                </div>
+                }
+            }
+            
+            if (!hasData) {
+                showAlert('الرجاء إدخال بيانات واحدة على الأقل', 'danger');
+                return;
+            }
+
+            // إضافة التقديم
+            const submission = {
+                id: Date.now(),
+                facilityId: parseInt(facilityId),
+                month: month,
+                data: data,
+                submittedBy: currentUser.name,
+                date: new Date().toISOString(),
+                status: 'pending'
+            };
+            
+            submissions.push(submission);
+            
+            // إعادة تعيين النموذج
+            resetForm();
+            
+            showSuccess('تم إرسال البيانات بنجاح!');
+            showPage('dashboard');
+        }
+
+        function resetForm() {
+            document.querySelectorAll('#kpiForms input').forEach(input => {
+                input.value = '';
+            });
+        }
+
+        function loadReview() {
+            const pendingSubs = submissions.filter(s => s.status === 'pending');
+            const container = document.getElementById('pendingList');
+            const noPending = document.getElementById('noPending');
+            
+            if (pendingSubs.length === 0) {
+                container.innerHTML = '';
+                noPending.classList.remove('hidden');
+                return;
+            }
+            
+            noPending.classList.add('hidden');
+            container.innerHTML = '';
+            
+            pendingSubs.forEach(sub => {
+                const facility = facilities.find(f => f.id == sub.facilityId);
+                const kpiCount = Object.keys(sub.data).length;
                 
-                ${isApplicable ? `
-                <div class="input-row">
-                    <!-- البسط -->
-                    <div class="input-group">
-                        <label class="input-label">
-                            <i class="fas fa-arrow-up" style="color: #22c55e"></i>
-                            البسط
-                        </label>
-                        <input type="number" 
-                               class="num-input" 
-                               id="num-${kpi.code}"
-                               placeholder="${kpi.numerator}"
-                               value="${data.numerator || ''}"
-                               step="${kpi.unit === '%' ? '0.01' : '1'}"
-                               oninput="updateIndicator('${kpi.code}')">
-                        <div class="input-help">
-                            <div class="help-text">${kpi.numeratorHelp}</div>
-                            <button class="help-btn" onclick="toggleHelp('${kpi.code}-num')">
-                                <i class="fas fa-question-circle"></i>
-                            </button>
+                const card = document.createElement('div');
+                card.className = 'card fade-in';
+                card.style.marginBottom = '12px';
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                                ${facility?.name || 'غير معروف'}
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                الشهر: ${sub.month} • مقدم بواسطة: ${sub.submittedBy} • ${kpiCount} مؤشرات
+                            </div>
+                        </div>
+                        <span class="badge badge-warning">قيد المراجعة</span>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;">
+                            ${Object.entries(sub.data).map(([code, value]) => {
+                                const indicator = getIndicatorByCode(code);
+                                return `
+                                    <div>
+                                        <div style="font-weight: 600;">${code}</div>
+                                        <div>${value} ${indicator?.unit || ''}</div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                     
-                    <!-- المقام -->
-                    <div class="input-group">
-                        <label class="input-label">
-                            <i class="fas fa-arrow-down" style="color: #ef4444"></i>
-                            المقام
-                        </label>
-                        <input type="number" 
-                               class="num-input" 
-                               id="den-${kpi.code}"
-                               placeholder="${kpi.denominator}"
-                               value="${data.denominator || ''}"
-                               step="${kpi.unit === '%' ? '0.01' : '1'}"
-                               oninput="updateIndicator('${kpi.code}')">
-                        <div class="input-help">
-                            <div class="help-text">${kpi.denominatorHelp}</div>
-                            <button class="help-btn" onclick="toggleHelp('${kpi.code}-den')">
-                                <i class="fas fa-question-circle"></i>
-                            </button>
-                        </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-success" onclick="showApprovalModal(${sub.id}, 'approve')">
+                            <i class="fas fa-check"></i> اعتماد
+                        </button>
+                        <button class="btn btn-danger" onclick="showApprovalModal(${sub.id}, 'reject')">
+                            <i class="fas fa-times"></i> رفض
+                        </button>
                     </div>
-                </div>
-                ` : ''}
+                `;
                 
-                ${data.result && isApplicable ? `
-                    <div class="result-box">
-                        <div class="result-content">
-                            <div>
-                                <div style="font-size: 12px; color: #64748b;">النتيجة</div>
-                                <div class="result-value">${data.result} ${kpi.unit}</div>
-                            </div>
-                            <div class="result-status ${getResultStatusClass(data.result, kpi.target)}">
-                                ${getResultStatusText(data.result, kpi.target)}
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
+                container.appendChild(card);
+            });
+        }
 
-// ==================== إضافة زر تغيير المنشأة إلى Header ====================
-// أضف هذا الكود في دالة init() أو في مكان مناسب
-function addFacilitySwitcher() {
-    const headerTop = document.querySelector('.header-top');
-    
-    const switcher = document.createElement('div');
-    switcher.style.display = 'flex';
-    switcher.style.gap = '8px';
-    switcher.innerHTML = `
-        <button onclick="changeFacilityType('hospital')" 
-                style="padding: 6px 12px; background: ${currentFacility.type === 'hospital' ? '#0ea5e9' : '#e2e8f0'}; color: ${currentFacility.type === 'hospital' ? 'white' : '#475569'}; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
-            <i class="fas fa-hospital"></i> مستشفى
-        </button>
-        <button onclick="changeFacilityType('unit')" 
-                style="padding: 6px 12px; background: ${currentFacility.type === 'unit' ? '#3b82f6' : '#e2e8f0'}; color: ${currentFacility.type === 'unit' ? 'white' : '#475569'}; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
-            <i class="fas fa-clinic-medical"></i> وحدة
-        </button>
-        <button onclick="changeFacilityType('center')" 
-                style="padding: 6px 12px; background: ${currentFacility.type === 'center' ? '#22c55e' : '#e2e8f0'}; color: ${currentFacility.type === 'center' ? 'white' : '#475569'}; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
-            <i class="fas fa-home"></i> مركز
-        </button>
-    `;
-    
-    headerTop.appendChild(switcher);
-}
+        function showApprovalModal(subId, action) {
+            currentSubmissionId = subId;
+            const sub = submissions.find(s => s.id == subId);
+            const facility = facilities.find(f => f.id == sub.facilityId);
+            
+            document.getElementById('modalMessage').textContent = 
+                `${action === 'approve' ? 'اعتماد' : 'رفض'} بيانات ${facility?.name} للشهر ${sub.month}؟`;
+            
+            document.getElementById('approvalModal').classList.remove('hidden');
+        }
 
-// ==================== تحديث دالة init ====================
-function init() {
-    addFacilitySwitcher();
-    loadTabs();
-    loadIndicators();
-    loadFromStorage();
-    updateProgress();
-}
+        function hideModal() {
+            document.getElementById('approvalModal').classList.add('hidden');
+            currentSubmissionId = null;
+        }
+
+        function approveSubmission() {
+            if (currentSubmissionId) {
+                const index = submissions.findIndex(s => s.id == currentSubmissionId);
+                if (index !== -1) {
+                    submissions[index].status = 'approved';
+                    submissions[index].approvedBy = currentUser.name;
+                    submissions[index].approvedDate = new Date().toISOString();
+                    
+                    showSuccess('تم اعتماد البيانات بنجاح!');
+                    hideModal();
+                    loadReview();
+                    loadDashboard();
+                }
+            }
+        }
+
+        function rejectSubmission() {
+            if (currentSubmissionId) {
+                const index = submissions.findIndex(s => s.id == currentSubmissionId);
+                if (index !== -1) {
+                    submissions[index].status = 'rejected';
+                    submissions[index].rejectedBy = currentUser.name;
+                    submissions[index].rejectedDate = new Date().toISOString();
+                    
+                    showSuccess('تم رفض البيانات!');
+                    hideModal();
+                    loadReview();
+                    loadDashboard();
+                }
+            }
+        }
+
+        function loadReports() {
+            // رسم المخططات
+            drawFacilityComparisonChart();
+            drawDistributionChart();
+            
+            // تحميل التفاصيل
+            loadReportDetails();
+        }
+
+        function drawKPITrendChart() {
+            const ctx = document.getElementById('kpiChart').getContext('2d');
+            
+            // بيانات تجريبية
+            const data = {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل'],
+                datasets: [
+                    {
+                        label: 'نسبة الإشغال',
+                        data: [78, 82, 85, 83],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'نسبة الوفيات',
+                        data: [3.2, 2.8, 2.3, 2.1],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            };
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            rtl: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawFacilityComparisonChart() {
+            const ctx = document.getElementById('facilityChart').getContext('2d');
+            
+            const data = {
+                labels: facilities.map(f => f.name),
+                datasets: [
+                    {
+                        label: 'نسبة الإشغال %',
+                        data: [85, 78, 92, 65, 45],
+                        backgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: 'نسبة الوفيات %',
+                        data: [2.3, 3.1, 1.8, 2.5, 3.8],
+                        backgroundColor: '#ef4444'
+                    }
+                ]
+            };
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            rtl: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawDistributionChart() {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            const data = {
+                labels: ['استخدام الطاقة', 'جودة الخدمة', 'القوى البشرية', 'مالية'],
+                datasets: [{
+                    data: [4, 3, 5, 2],
+                    backgroundColor: [
+                        '#3b82f6',
+                        '#ef4444',
+                        '#10b981',
+                        '#f59e0b'
+                    ]
+                }]
+            };
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            rtl: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadReportDetails() {
+            const tbody = document.getElementById('reportDetails');
+            tbody.innerHTML = '';
+            
+            let allIndicators = [];
+            for (const category in kpiCategories) {
+                allIndicators = allIndicators.concat(kpiCategories[category].indicators);
+            }
+            
+            allIndicators.forEach(indicator => {
+                const value = Math.random() * indicator.target * 1.5;
+                const variance = ((value - indicator.target) / indicator.target * 100).toFixed(1);
+                const status = Math.abs(variance) <= 10 ? 'جيد' : Math.abs(variance) <= 20 ? 'متوسط' : 'ضعيف';
+                
+                const row = `
+                    <tr>
+                        <td>${indicator.code}: ${indicator.name}</td>
+                        <td>${value.toFixed(1)} ${indicator.unit}</td>
+                        <td>${indicator.target} ${indicator.unit}</td>
+                        <td style="color: ${variance >= 0 ? '#10b981' : '#ef4444'}">${variance}%</td>
+                        <td><span class="badge ${status === 'جيد' ? 'badge-success' : status === 'متوسط' ? 'badge-warning' : 'badge-danger'}">${status}</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function loadFacilities() {
+            const tbody = document.getElementById('facilitiesList');
+            tbody.innerHTML = '';
+            
+            facilities.forEach(facility => {
+                const row = `
+                    <tr>
+                        <td>${facility.name}</td>
+                        <td>${facility.type}</td>
+                        <td>${facility.governorate}</td>
+                        <td>${facility.directorate}</td>
+                        <td>${facility.beds}</td>
+                        <td><span class="badge ${facility.status === 'نشط' ? 'badge-success' : 'badge-danger'}">${facility.status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function loadUsers() {
+            const tbody = document.getElementById('usersList');
+            tbody.innerHTML = '';
+            
+            Object.values(users).forEach(user => {
+                const row = `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td><span class="badge badge-primary">${user.role}</span></td>
+                        <td>${user.role.includes('مديرية') ? 'شرق القاهرة' : user.role.includes('منشأة') ? 'مستشفى القاهرة' : '—'}</td>
+                        <td><span class="badge badge-success">نشط</span></td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function exportData() {
+            showSuccess('جارٍ تحميل الملف...');
+            // في تطبيق حقيقي، هنا سيتم إنشاء ملف Excel أو PDF
+        }
+
+        function refreshReports() {
+            showSuccess('تم تحديث البيانات');
+            loadReports();
+        }
+
+        function getIndicatorByCode(code) {
+            for (const category in kpiCategories) {
+                const indicator = kpiCategories[category].indicators.find(ind => ind.code === code);
+                if (indicator) return indicator;
+            }
+            return null;
+        }
+
+        function loadSampleData() {
+            // إضافة بيانات تقديم تجريبية
+            submissions = [
+                {
+                    id: 1,
+                    facilityId: 1,
+                    month: '2024-03',
+                    data: {
+                        'UTZ-01': 85.5,
+                        'UTZ-02': 78.2,
+                        'MP-01': 2.3,
+                        'WFM-01': 95.0,
+                        'FM-01': 1250000
+                    },
+                    submittedBy: 'ليلى عمر',
+                    date: '2024-03-15',
+                    status: 'approved',
+                    approvedBy: 'سارة خالد',
+                    approvedDate: '2024-03-16'
+                },
+                {
+                    id: 2,
+                    facilityId: 2,
+                    month: '2024-03',
+                    data: {
+                        'UTZ-01': 76.8,
+                        'UTZ-04': 9850,
+                        'MP-01': 3.1,
+                        'WFM-02': 85.6
+                    },
+                    submittedBy: 'محمد حسن',
+                    date: '2024-03-18',
+                    status: 'pending'
+                },
+                {
+                    id: 3,
+                    facilityId: 3,
+                    month: '2024-02',
+                    data: {
+                        'UTZ-01': 92.1,
+                        'UTZ-03': 88.5,
+                        'MP-03': 15.2,
+                        'WFM-03': 91.5
+                    },
+                    submittedBy: 'ليلى عمر',
+                    date: '2024-02-14',
+                    status: 'approved',
+                    approvedBy: 'سارة خالد',
+                    approvedDate: '2024-02-15'
+                }
+            ];
+        }
+
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            const alert = document.getElementById('successAlert');
+            alert.classList.remove('hidden');
+            
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
+        }
+
+        function showAlert(message, type) {
+            alert(message); // نسخة مبسطة
+        }
+    </script>
+</body>
+</html>
